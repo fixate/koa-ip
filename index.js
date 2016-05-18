@@ -1,4 +1,4 @@
-var debug = require('debug')('koa-ip');
+const debug = require('debug')('koa-ip');
 
 module.exports = ip;
 
@@ -10,22 +10,29 @@ function ip(conf) {
       conf = {};
     }
   }
+
   if (Array.isArray(conf)) {
     conf = {whiteList: conf};
   }
-  return function* (next) {
-    var _ip = this.ip;
-    var pass = false;
-    if (conf.whiteList && Array.isArray(conf.whiteList)) {
-      pass = conf.whiteList.some(function (item) {
-        return RegExp(item).test(_ip);
-      });
-    }
 
-    if (conf.blackList && Array.isArray(conf.blackList)) {
-      pass = !conf.blackList.some(function (item) {
-        return RegExp(item).test(_ip);
-      });
+  return function* (next) {
+    const _ip = this.ip;
+    let pass = false;
+
+    if (typeof conf == 'function') {
+      pass = yield *conf.bind(this);
+    } else {
+      if (conf.whiteList && Array.isArray(conf.whiteList)) {
+        pass = conf.whiteList.some(function (item) {
+          return RegExp(item).test(_ip);
+        });
+      }
+
+      if (conf.blackList && Array.isArray(conf.blackList)) {
+        pass = !conf.blackList.some(function (item) {
+          return RegExp(item).test(_ip);
+        });
+      }
     }
 
     if (pass) {
